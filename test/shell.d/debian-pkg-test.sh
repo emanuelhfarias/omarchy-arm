@@ -34,9 +34,9 @@ export OMARCHY_PATH="$ROOT"
 export OMARCHY_PLATFORM=debian
 export OMARCHY_ARCHITECTURE=arm64
 
-"$ROOT/bin/omarchy-pkg-add" libreoffice-fresh hyprland
+"$ROOT/bin/omarchy-pkg-add" libreoffice-fresh cups-pdf pinta hyprland
 
-grep -q $'^apt-get\tinstall -y --no-install-recommends libreoffice$' "$TEST_LOG" ||
+grep -q $'^apt-get\tinstall -y --no-install-recommends libreoffice printer-driver-cups-pdf drawing$' "$TEST_LOG" ||
   fail "Debian package add resolves stable package names"
 grep -q $'^apt-get\tinstall -y --no-install-recommends -t trixie-backports hyprland$' "$TEST_LOG" ||
   fail "Debian package add selects Backports explicitly"

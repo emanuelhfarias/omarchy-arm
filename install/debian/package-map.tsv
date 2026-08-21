@@ -14,6 +14,7 @@ noto-fonts-emoji	fonts-noto-color-emoji	stable	all
 bluez-utils	bluez	stable	all	
 docker	docker.io	stable	all	
 docker-compose	docker-compose	stable	all	
+cups-pdf	printer-driver-cups-pdf	stable	all	Debian names the CUPS PDF backend after its printer-driver role
 fcitx5-gtk	fcitx5-frontend-gtk3	stable	all	
 fcitx5-qt	fcitx5-frontend-qt5 fcitx5-frontend-qt6	stable	all	
 fd	fd-find	stable	all	The executable is exposed as fdfind by Debian
@@ -28,6 +29,7 @@ lua51	lua5.1	stable	all
 nautilus-python	python3-nautilus	stable	all	
 networkmanager	network-manager	stable	all	
 plocate	plocate	stable	all	
+pinta	drawing	stable	all	Pinta is unavailable in Debian 13; Drawing provides the basic image-editor role
 sof-firmware	firmware-sof-signed	stable	amd64	Intel firmware is x86-specific
 wireless-regdb	wireless-regdb	stable	all	
 zram-generator	systemd-zram-generator	stable	all	

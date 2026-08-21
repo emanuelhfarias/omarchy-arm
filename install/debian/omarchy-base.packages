@@ -13,7 +13,7 @@ clang
 cups
 cups-browsed
 cups-filters
-cups-pdf
+printer-driver-cups-pdf
 ddcutil
 dbus-user-session
 docker.io
@@ -71,7 +71,7 @@ network-manager
 neovim
 obs-studio
 pamixer
-pinta
+drawing
 pipewire
 pipewire-alsa
 pipewire-pulse
