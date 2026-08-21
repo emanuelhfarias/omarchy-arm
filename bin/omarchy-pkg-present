@@ -3,8 +3,32 @@
 # omarchy:summary=Returns true if all of the named packages are installed on the system (or false if any of them are missing).
 # omarchy:args=<packages...>
 
-for pkg in "$@"; do
-  pacman -Q "$pkg" &>/dev/null || exit 1
-done
+set -euo pipefail
+
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+platform=${OMARCHY_PLATFORM:-$("$script_dir/omarchy-platform" 2>/dev/null || echo arch)}
+
+if [[ $platform == "debian" ]]; then
+  if [[ -n ${OMARCHY_PATH:-} ]]; then
+    omarchy_path=$OMARCHY_PATH
+  elif [[ -f $script_dir/../install/debian/package-resolver.sh ]]; then
+    omarchy_path=$(cd -- "$script_dir/.." && pwd)
+  else
+    omarchy_path=/usr/share/omarchy
+  fi
+
+  export OMARCHY_PATH=$omarchy_path
+  source "$omarchy_path/install/debian/package-resolver.sh"
+
+  for requested in "$@"; do
+    IFS=$'\t' read -r _ packages _ < <(debian_package_record "$requested") || exit 1
+    read -r -a resolved <<<"$packages"
+    debian_packages_installed "${resolved[@]}" || exit 1
+  done
+else
+  for pkg in "$@"; do
+    pacman -Q "$pkg" &>/dev/null || exit 1
+  done
+fi
 
 exit 0

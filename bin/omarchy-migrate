@@ -31,25 +31,40 @@ done
 OMARCHY_PATH="${OMARCHY_PATH:-/usr/share/omarchy}"
 STATE_DIR="${OMARCHY_MIGRATION_STATE:-$HOME/.local/state/omarchy/migrations}"
 MIGRATIONS_DIR="$OMARCHY_PATH/migrations"
+PLATFORM=${OMARCHY_PLATFORM:-$(omarchy-platform 2>/dev/null || echo arch)}
+
+migration_supports_platform() {
+  local file=$1
+  local declared
+
+  declared=$(sed -n '1,20s/^# omarchy:platforms=//p' "$file" | head -1)
+  if [[ -z $declared ]]; then
+    [[ $PLATFORM == "arch" ]]
+  else
+    [[ ",$declared," == *",$PLATFORM,"* ]]
+  fi
+}
 
 migration_entries() {
   [[ -d $MIGRATIONS_DIR ]] || return 0
 
-  local file filename
+  local file filename supported
 
   for file in "$MIGRATIONS_DIR"/*.sh; do
     [[ -f $file ]] || continue
     filename=$(basename "$file")
-    printf '%s\t%s\t%s\n' "$filename" "$file" "$STATE_DIR/$filename"
+    supported=0
+    migration_supports_platform "$file" && supported=1
+    printf '%s\t%s\t%s\t%s\n' "$filename" "$file" "$STATE_DIR/$filename" "$supported"
   done
 }
 
 pending_migrations() {
-  local name file marker
+  local name file marker supported
 
-  while IFS=$'\t' read -r name file marker; do
+  while IFS=$'\t' read -r name file marker supported; do
     [[ -n $name ]] || continue
-    if [[ ! -f $marker ]]; then
+    if [[ $supported == 1 && ! -f $marker ]]; then
       printf '%s\n' "$name"
     fi
   done < <(migration_entries)
@@ -65,7 +80,39 @@ if [[ $mode == "pending" ]]; then
   fi
 fi
 
-wait_for_pacman_transaction() {
+wait_for_package_transaction() {
+  if [[ ${OMARCHY_PLATFORM:-$(omarchy-platform 2>/dev/null || echo arch)} == "debian" ]]; then
+    local lock_file
+    local locked=0
+
+    for lock_file in /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock; do
+      [[ -e $lock_file ]] || continue
+      if omarchy-cmd-present fuser && fuser "$lock_file" >/dev/null 2>&1; then
+        locked=1
+        break
+      fi
+    done
+
+    (( locked )) || return 0
+    echo "Waiting for an APT/dpkg transaction to finish before running Omarchy migrations..."
+
+    for _ in {1..900}; do
+      locked=0
+      for lock_file in /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock; do
+        [[ -e $lock_file ]] || continue
+        if omarchy-cmd-present fuser && fuser "$lock_file" >/dev/null 2>&1; then
+          locked=1
+          break
+        fi
+      done
+      (( locked )) || return 0
+      sleep 1
+    done
+
+    echo "The APT/dpkg transaction is still running; Omarchy migrations will retry on next login."
+    exit 0
+  fi
+
   local lock_file=/var/lib/pacman/db.lck
 
   [[ -e $lock_file ]] || return 0
@@ -80,17 +127,19 @@ wait_for_pacman_transaction() {
   exit 0
 }
 
-wait_for_pacman_transaction
+wait_for_package_transaction
 
 mkdir -p "$STATE_DIR"
 [[ -d $MIGRATIONS_DIR ]] || exit 0
 
-while IFS=$'\t' read -r name file marker; do
+while IFS=$'\t' read -r name file marker supported; do
   [[ -n $name ]] || continue
 
   if [[ ! -f $marker ]]; then
-    echo -e "\e[32m\nRunning migration (${name%.sh})\e[0m"
-    OMARCHY_PATH="$OMARCHY_PATH" bash -euo pipefail "$file"
+    if [[ $supported == 1 ]]; then
+      echo -e "\e[32m\nRunning migration (${name%.sh})\e[0m"
+      OMARCHY_PATH="$OMARCHY_PATH" bash -euo pipefail "$file"
+    fi
     mkdir -p "$(dirname "$marker")"
     touch "$marker"
   fi

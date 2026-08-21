@@ -2,6 +2,8 @@
 
 # omarchy:summary=Check if hibernation is supported
 
+[[ ${OMARCHY_PLATFORM:-$(omarchy-platform 2>/dev/null || echo arch)} == "arch" ]] || exit 1
+
 if [[ ! -f /sys/power/image_size ]]; then
   exit 1
 fi

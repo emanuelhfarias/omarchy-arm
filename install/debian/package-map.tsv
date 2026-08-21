@@ -1,0 +1,108 @@
+# identifier	Debian packages	suite	architectures	description
+chromium	chromium	stable	all	
+firefox	firefox-esr	stable	all	
+neovim	neovim	stable	all	
+nvim	neovim	stable	all	
+libreoffice-fresh	libreoffice	stable	all	
+python-gobject	python3-gi	stable	all	
+python-protobuf	python3-protobuf	stable	all	
+linux	linux-image-arm64	stable	arm64	Debian kernel metapackage
+linux-headers	linux-headers-arm64	stable	arm64	Debian kernel headers
+noto-fonts	fonts-noto-core	stable	all	
+noto-fonts-cjk	fonts-noto-cjk	stable	all	
+noto-fonts-emoji	fonts-noto-color-emoji	stable	all	
+bluez-utils	bluez	stable	all	
+docker	docker.io	stable	all	
+docker-compose	docker-compose	stable	all	
+fcitx5-gtk	fcitx5-frontend-gtk3	stable	all	
+fcitx5-qt	fcitx5-frontend-qt5 fcitx5-frontend-qt6	stable	all	
+fd	fd-find	stable	all	The executable is exposed as fdfind by Debian
+gst-plugin-pipewire	gstreamer1.0-pipewire	stable	all	
+gvfs-mtp	gvfs-backends	stable	all	
+gvfs-nfs	gvfs-backends	stable	all	
+gvfs-smb	gvfs-backends	stable	all	
+inetutils	inetutils-tools	stable	all	
+libsecret	libsecret-tools	stable	all	
+libvips	libvips-tools	stable	all	
+lua51	lua5.1	stable	all	
+nautilus-python	python3-nautilus	stable	all	
+networkmanager	network-manager	stable	all	
+plocate	plocate	stable	all	
+sof-firmware	firmware-sof-signed	stable	amd64	Intel firmware is x86-specific
+wireless-regdb	wireless-regdb	stable	all	
+zram-generator	systemd-zram-generator	stable	all	
+hyprland	hyprland	backports	all	
+hyprland-guiutils	hyprland-guiutils	backports	all	
+hyprland-preview-share-picker	hyprland-guiutils	backports	all	Provided by Debian's Hyprland GUI utilities
+hyprpicker	hyprpicker	backports	all	
+hyprsunset	hyprsunset	backports	all	
+quickshell-git	quickshell	backports	all	
+uwsm	uwsm	backports	all	
+xdg-desktop-portal-hyprland	xdg-desktop-portal-hyprland	backports	all	
+openssh	openssh-server	stable	all	
+libfprint	libfprint-2-2	stable	all	
+pam-u2f	libpam-u2f	stable	all	
+freerdp	freerdp3-x11	stable	all	
+openbsd-netcat	netcat-openbsd	stable	all	
+qt6-imageformats	qt6-image-formats-plugins	stable	all	
+sushi	gnome-sushi	stable	all	
+tesseract	tesseract-ocr	stable	all	
+tesseract-data-eng	tesseract-ocr-eng	stable	all	
+tldr	tldr-py	stable	all	
+woff2-font-awesome	fonts-font-awesome	stable	all	
+yaru-icon-theme	yaru-theme-icon	stable	all	
+zbar	zbar-tools	stable	all	
+visual-studio-code-bin	code	vendor	all	Microsoft repository must be configured separately
+1password	1password	vendor	all	1Password repository must be configured separately
+1password-cli	1password-cli	vendor	all	1Password repository must be configured separately
+tailscale	tailscale	vendor	all	Tailscale repository must be configured separately
+aether	-	unsupported	all	Requires an Omarchy-built Debian package
+asdcontrol	-	unsupported	all	Requires an Omarchy-built Debian package
+cliamp	-	unsupported	all	Requires an Omarchy-built Debian package
+gpu-screen-recorder	-	unsupported	arm64	No supported Debian arm64 package in the initial release
+herdr	-	unsupported	all	Requires an Omarchy-built Debian package
+kernel-modules-hook	-	unsupported	all	Arch kernel hook is not used on Debian
+lazydocker	-	unsupported	all	Requires a separately packaged arm64 build
+localsend	-	unsupported	all	Requires a separately packaged arm64 build
+mise-bin	-	unsupported	all	Requires an Omarchy-built Debian package
+omacalc	-	unsupported	all	Requires an Omarchy-built Debian package
+omacut	-	unsupported	all	Requires an Omarchy-built Debian package
+omarchy-nvim	-	unsupported	all	Requires an Omarchy-built Debian package
+omawrite	-	unsupported	all	Requires an Omarchy-built Debian package
+tensaku	-	unsupported	all	Requires an Omarchy-built Debian package
+tobi-try	-	unsupported	all	Requires an Omarchy-built Debian package
+ttf-ia-writer	-	unsupported	all	Requires an Omarchy-built Debian package
+ttf-jetbrains-mono-nerd-basic	-	unsupported	all	Debian installs the unpatched JetBrains Mono fallback
+ttfx	-	unsupported	all	Requires an Omarchy-built Debian package
+ufw-docker	-	unsupported	all	The initial Debian firewall uses native UFW policy
+usage	-	unsupported	all	Requires an Omarchy-built Debian package
+signal-desktop	-	unsupported	arm64	Use Signal in another supported client
+spotify	-	unsupported	arm64	Use the Spotify web application
+steam	-	unsupported	arm64	Steam does not provide a native arm64 client
+lutris	-	unsupported	arm64	The Omarchy gaming stack is amd64-only
+wine-staging	-	unsupported	arm64	The Omarchy gaming stack is amd64-only
+google-chrome	-	unsupported	arm64	Use Chromium
+microsoft-edge-stable-bin	-	unsupported	arm64	Use Chromium or Firefox ESR
+brave-bin	-	unsupported	arm64	Use Chromium or a vendor arm64 build
+brave-origin-bin	-	unsupported	arm64	Use Chromium or a vendor arm64 build
+zen-browser-bin	-	unsupported	arm64	Use Firefox ESR
+obsidian	-	unsupported	arm64	Use the Obsidian web application until an arm64 package is supported
+discord	-	unsupported	arm64	Use the Discord web application
+dropbox	-	unsupported	arm64	Use a supported synchronization client or web application
+dropbox-cli	-	unsupported	arm64	Use a supported synchronization client or web application
+nautilus-dropbox	-	unsupported	arm64	Use a supported synchronization client or web application
+asusctl	-	unsupported	arm64	ASUS ROG setup is x86-specific
+supergfxctl	-	unsupported	arm64	Hybrid GPU setup is x86-specific
+linux-ptl	-	unsupported	arm64	Intel PTL kernel is x86-specific
+linux-ptl-headers	-	unsupported	arm64	Intel PTL kernel is x86-specific
+intel-ipu7-camera	-	unsupported	arm64	Intel IPU7 is x86-specific
+intel-lpmd	-	unsupported	arm64	Intel power management is x86-specific
+thermald	-	unsupported	arm64	Intel thermal management is x86-specific
+macbook12-spi-driver-dkms	-	unsupported	arm64	This driver targets Intel MacBooks
+linux-t2	-	unsupported	arm64	T2 Macs are x86-specific
+nvidia-580xx-dkms	-	unsupported	arm64	The Arch NVIDIA package is not portable
+nvidia-dkms	-	unsupported	arm64	Use the Debian or board-vendor driver for the device
+nvidia-open-dkms	-	unsupported	arm64	Use the Debian or board-vendor driver for the device
+xpadneo-dkms	-	unsupported	arm64	Not part of the initial ARM release
+yay	-	unsupported	all	The AUR is available only on Arch Linux
+yay-debug	-	unsupported	all	The AUR is available only on Arch Linux

@@ -2,6 +2,15 @@
 
 # omarchy:summary=Print the active Omarchy mirror and package channel
 
+if [[ ${OMARCHY_PLATFORM:-$(omarchy-platform 2>/dev/null || echo arch)} == "debian" ]]; then
+  if [[ -e ${OMARCHY_PATH:-/usr/share/omarchy}/.git ]]; then
+    echo dev
+  else
+    echo "${OMARCHY_DEBIAN_CHANNEL:-stable}"
+  fi
+  exit 0
+fi
+
 if grep -q "https://stable-mirror.omarchy.org/" /etc/pacman.d/mirrorlist; then
   mirror="stable"
 elif grep -q "https://rc-mirror.omarchy.org/" /etc/pacman.d/mirrorlist; then

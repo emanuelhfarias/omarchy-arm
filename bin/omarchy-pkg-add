@@ -1,24 +1,73 @@
 #!/bin/bash
 
-# omarchy:summary=Install Arch packages if they are missing
+# omarchy:summary=Install system packages if they are missing
 # omarchy:args=<packages...>
 # omarchy:examples=omarchy pkg add jq ripgrep
 # omarchy:requires-sudo=true
 
-if omarchy-pkg-missing "$@"; then
-  if (( EUID == 0 )); then
-    pacman -S --noconfirm --needed "$@" || exit 1
-  else
-    sudo pacman -S --noconfirm --needed "$@" || exit 1
-  fi
-fi
+set -euo pipefail
 
-for pkg in "$@"; do
-  # Secondary check to handle states where pacman doesn't actually register an error
-  if ! pacman -Q "$pkg" &>/dev/null; then
-    echo -e "\033[31mError: Package '$pkg' did not install\033[0m" >&2
-    exit 1
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+platform=${OMARCHY_PLATFORM:-$("$script_dir/omarchy-platform" 2>/dev/null || echo arch)}
+
+if [[ $platform == "debian" ]]; then
+  if [[ -n ${OMARCHY_PATH:-} ]]; then
+    omarchy_path=$OMARCHY_PATH
+  elif [[ -f $script_dir/../install/debian/package-resolver.sh ]]; then
+    omarchy_path=$(cd -- "$script_dir/.." && pwd)
+  else
+    omarchy_path=/usr/share/omarchy
   fi
-done
+
+  export OMARCHY_PATH=$omarchy_path
+  source "$omarchy_path/install/debian/package-resolver.sh"
+
+  stable_packages=()
+  backports_packages=()
+  package_id=""
+  packages=""
+  suite=""
+
+  for requested in "$@"; do
+    IFS=$'\t' read -r package_id packages suite < <(debian_package_record "$requested") || exit $?
+    read -r -a resolved <<<"$packages"
+    if [[ $suite == "backports" ]]; then
+      backports_packages+=("${resolved[@]}")
+    else
+      stable_packages+=("${resolved[@]}")
+    fi
+  done
+
+  privilege=()
+  (( EUID == 0 )) || privilege=(sudo)
+  ((${#stable_packages[@]} == 0)) || "${privilege[@]}" apt-get install -y --no-install-recommends "${stable_packages[@]}"
+  ((${#backports_packages[@]} == 0)) || "${privilege[@]}" apt-get install -y --no-install-recommends \
+    -t "${OMARCHY_DEBIAN_BACKPORTS_SUITE:-trixie-backports}" "${backports_packages[@]}"
+
+  for requested in "$@"; do
+    IFS=$'\t' read -r package_id packages suite < <(debian_package_record "$requested")
+    read -r -a resolved <<<"$packages"
+    if ! debian_packages_installed "${resolved[@]}"; then
+      echo -e "\033[31mError: Package '$requested' did not install\033[0m" >&2
+      exit 1
+    fi
+  done
+else
+  if omarchy-pkg-missing "$@"; then
+    if (( EUID == 0 )); then
+      pacman -S --noconfirm --needed "$@" || exit 1
+    else
+      sudo pacman -S --noconfirm --needed "$@" || exit 1
+    fi
+  fi
+
+  for pkg in "$@"; do
+    # Secondary check to handle states where pacman doesn't actually register an error
+    if ! pacman -Q "$pkg" &>/dev/null; then
+      echo -e "\033[31mError: Package '$pkg' did not install\033[0m" >&2
+      exit 1
+    fi
+  done
+fi
 
 exit 0

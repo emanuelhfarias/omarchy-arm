@@ -3,6 +3,11 @@
 # omarchy:summary=Show a fuzzy-finder TUI for picking new AUR packages to install.
 # omarchy:requires-sudo=true
 
+if [[ ${OMARCHY_PLATFORM:-$(omarchy-platform 2>/dev/null || echo arch)} == "debian" ]]; then
+  echo "Error: The AUR is available only on Arch Linux." >&2
+  exit 1
+fi
+
 fzf_args=(
   --multi
   --preview 'yay -Siia {1}'

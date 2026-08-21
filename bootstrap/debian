@@ -1,0 +1,245 @@
+#!/bin/bash
+
+# Install the Omarchy desktop on an existing Debian 13 system. This source
+# bootstrap is the development path; production releases will replace source
+# installation with signed Debian packages.
+
+set -eEuo pipefail
+
+REPOSITORY_URL=${OMARCHY_REPOSITORY_URL:-https://github.com/emanuelhfarias/omarchy-arm.git}
+REPOSITORY_BRANCH=${OMARCHY_REPOSITORY_BRANCH:-main}
+BACKPORTS_SUITE=${OMARCHY_DEBIAN_BACKPORTS_SUITE:-trixie-backports}
+INSTALL_ROOT=/usr/share/omarchy
+STATE_DIR=/var/lib/omarchy/install
+LOG_FILE=/var/log/omarchy-install.log
+LOCAL_LOG=""
+SOURCE_DIR=""
+TARGET_USER=${OMARCHY_INSTALL_USER:-${SUDO_USER:-$USER}}
+TEMP_DIR=""
+
+usage() {
+  cat <<USAGE
+Usage: bootstrap/debian [--source PATH] [--user USER]
+
+Install Omarchy on Debian 13. Without --source, the installer clones:
+  $REPOSITORY_URL ($REPOSITORY_BRANCH)
+
+Options:
+  --source PATH  Install the specified Omarchy checkout.
+  --user USER    Configure this existing non-root user.
+USAGE
+}
+
+while (($#)); do
+  case "$1" in
+    --source)
+      SOURCE_DIR=${2:-}
+      shift 2
+      ;;
+    --user)
+      TARGET_USER=${2:-}
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+done
+
+if (( EUID == 0 )); then
+  echo "Run this bootstrap as the Debian user to configure, not as root." >&2
+  echo "The script will request sudo only for system changes." >&2
+  exit 1
+fi
+
+command -v sudo >/dev/null || {
+  echo "Error: sudo is required. Install it and grant $TARGET_USER sudo access." >&2
+  exit 1
+}
+
+getent passwd "$TARGET_USER" >/dev/null || {
+  echo "Error: target user '$TARGET_USER' does not exist." >&2
+  exit 1
+}
+
+[[ $TARGET_USER != "root" ]] || {
+  echo "Error: the target user cannot be root." >&2
+  exit 1
+}
+
+os_release_file=${OMARCHY_OS_RELEASE_FILE:-/etc/os-release}
+[[ -r $os_release_file ]] || {
+  echo "Error: $os_release_file is missing." >&2
+  exit 1
+}
+
+distribution_id=$(sed -n 's/^ID=//p' "$os_release_file" | tr -d '"' | head -1)
+version_id=$(sed -n 's/^VERSION_ID=//p' "$os_release_file" | tr -d '"' | head -1)
+[[ $distribution_id == "debian" && $version_id == "13" ]] || {
+  echo "Error: this installer supports Debian 13; found $distribution_id ${version_id:-unknown}." >&2
+  exit 1
+}
+
+architecture=$(dpkg --print-architecture)
+[[ $architecture == "arm64" || $architecture == "amd64" ]] || {
+  echo "Error: supported architectures are arm64 and amd64; found $architecture." >&2
+  exit 1
+}
+
+[[ -d /run/systemd/system ]] || {
+  echo "Error: a systemd-based Debian installation is required." >&2
+  exit 1
+}
+
+available_kib=$(df -Pk / | awk 'NR == 2 { print $4 }')
+if [[ ! $available_kib =~ ^[0-9]+$ ]] || (( available_kib < 10 * 1024 * 1024 )); then
+  echo "Error: at least 10 GiB of free space is required on the root filesystem." >&2
+  exit 1
+fi
+
+sudo -v
+sudo install -d -m 0755 "$STATE_DIR"
+LOCAL_LOG=$(mktemp)
+
+cleanup() {
+  local status=$?
+  if [[ -n $LOCAL_LOG && -f $LOCAL_LOG ]]; then
+    sudo install -m 0644 "$LOCAL_LOG" "$LOG_FILE" 2>/dev/null || true
+    rm -f "$LOCAL_LOG"
+  fi
+  if [[ -n $TEMP_DIR && -d $TEMP_DIR ]]; then
+    rm -rf "$TEMP_DIR"
+  fi
+  exit "$status"
+}
+trap cleanup EXIT
+
+exec > >(tee -a "$LOCAL_LOG") 2>&1
+
+phase_done() {
+  sudo test -f "$STATE_DIR/$1"
+}
+
+mark_phase() {
+  sudo touch "$STATE_DIR/$1"
+}
+
+read_packages() {
+  sed -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' "$1"
+}
+
+echo "Installing Omarchy for Debian 13 $architecture as $TARGET_USER"
+
+if ! phase_done apt-sources; then
+  echo "==> Configure Debian Backports"
+  sudo tee /etc/apt/sources.list.d/omarchy-backports.sources >/dev/null <<EOF
+Types: deb
+URIs: https://deb.debian.org/debian
+Suites: $BACKPORTS_SUITE
+Components: main contrib non-free non-free-firmware
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+EOF
+  sudo apt-get update
+  sudo apt-get install -y --no-install-recommends ca-certificates curl git sudo
+  mark_phase apt-sources
+fi
+
+if [[ -z $SOURCE_DIR ]]; then
+  TEMP_DIR=$(mktemp -d)
+  SOURCE_DIR=$TEMP_DIR/omarchy
+  git clone --depth 1 --branch "$REPOSITORY_BRANCH" "$REPOSITORY_URL" "$SOURCE_DIR"
+else
+  SOURCE_DIR=$(cd -- "$SOURCE_DIR" && pwd)
+fi
+
+[[ -f $SOURCE_DIR/install/debian/omarchy-base.packages ]] || {
+  echo "Error: $SOURCE_DIR is not a Debian-capable Omarchy checkout." >&2
+  exit 1
+}
+
+if ! phase_done packages; then
+  echo "==> Install Debian desktop packages"
+  readarray -t stable_packages < <(read_packages "$SOURCE_DIR/install/debian/omarchy-base.packages")
+  readarray -t backports_packages < <(read_packages "$SOURCE_DIR/install/debian/omarchy-backports.packages")
+  sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${stable_packages[@]}"
+  sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    -t "$BACKPORTS_SUITE" "${backports_packages[@]}"
+  mark_phase packages
+fi
+
+echo "==> Install Omarchy runtime"
+sudo install -d -m 0755 "$INSTALL_ROOT"
+for entry in .git applications bin config default install migrations shell themes version logo.svg logo.txt; do
+  [[ -e $SOURCE_DIR/$entry ]] || continue
+  sudo cp -a "$SOURCE_DIR/$entry" "$INSTALL_ROOT/"
+done
+mark_phase runtime
+
+if ! phase_done system-config; then
+  echo "==> Configure the Debian system"
+  sudo env \
+    OMARCHY_PLATFORM=debian \
+    OMARCHY_LOG_TO_STDOUT=1 \
+    OMARCHY_PATH="$INSTALL_ROOT" \
+    OMARCHY_INSTALL="$INSTALL_ROOT/install" \
+    OMARCHY_INSTALL_USER="$TARGET_USER" \
+    PATH="$INSTALL_ROOT/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+    bash -eE -c 'source "$OMARCHY_INSTALL/helpers/logging.sh"; source "$OMARCHY_INSTALL/debian/install-assets.sh"'
+  sudo env \
+    OMARCHY_PLATFORM=debian \
+    OMARCHY_LOG_TO_STDOUT=1 \
+    OMARCHY_PATH="$INSTALL_ROOT" \
+    OMARCHY_INSTALL="$INSTALL_ROOT/install" \
+    OMARCHY_INSTALL_USER="$TARGET_USER" \
+    PATH="$INSTALL_ROOT/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+    "$INSTALL_ROOT/bin/omarchy-apply-system" --install-user "$TARGET_USER" --first-install
+  mark_phase system-config
+fi
+
+if ! phase_done user-config; then
+  echo "==> Seed and configure $TARGET_USER"
+  target_home=$(getent passwd "$TARGET_USER" | cut -d: -f6)
+  sudo -u "$TARGET_USER" cp -an /etc/skel/. "$target_home/"
+  sudo -u "$TARGET_USER" env \
+    HOME="$target_home" \
+    USER="$TARGET_USER" \
+    OMARCHY_PLATFORM=debian \
+    OMARCHY_PATH="$INSTALL_ROOT" \
+    OMARCHY_INSTALL="$INSTALL_ROOT/install" \
+    PATH="$INSTALL_ROOT/bin:/usr/local/bin:/usr/bin:/bin:$target_home/.local/bin" \
+    "$INSTALL_ROOT/bin/omarchy-provision-user" --first-install
+  mark_phase user-config
+fi
+
+if ! phase_done health-check; then
+  echo "==> Verify the Omarchy installation"
+  missing=()
+  for required_command in Hyprland hyprctl qs uwsm; do
+    command -v "$required_command" >/dev/null || missing+=("command:$required_command")
+  done
+
+  target_home=$(getent passwd "$TARGET_USER" | cut -d: -f6)
+  [[ -f /usr/local/share/wayland-sessions/omarchy.desktop ]] || missing+=("session:omarchy.desktop")
+  sudo test -f "$target_home/.config/hypr/hyprland.lua" || missing+=("config:hyprland.lua")
+  sudo systemctl is-enabled sddm.service >/dev/null 2>&1 || missing+=("service:sddm")
+
+  if ((${#missing[@]} > 0)); then
+    printf 'Error: installation health check failed: %s\n' "${missing[*]}" >&2
+    exit 1
+  fi
+  mark_phase health-check
+fi
+
+echo
+echo "Omarchy's Debian core is installed. Reboot to start the Omarchy session from SDDM."
+echo "Optional amd64-only applications were intentionally not installed; see docs/debian-arm-port.md."
+
+if [[ -t 0 ]] && gum confirm "Reboot now?"; then
+  sudo systemctl reboot
+fi

@@ -4,6 +4,11 @@
 # omarchy:requires-sudo=true
 # omarchy:args=[--force] [--no-rebuild]
 
+if [[ ${OMARCHY_PLATFORM:-$(omarchy-platform 2>/dev/null || echo arch)} == "debian" ]]; then
+  echo "Error: managed hibernation is not yet supported on Debian." >&2
+  exit 1
+fi
+
 FORCE=false
 NO_REBUILD=false
 for arg in "$@"; do

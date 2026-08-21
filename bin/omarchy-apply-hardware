@@ -72,4 +72,8 @@ export OMARCHY_INSTALL_LOG_FILE="${OMARCHY_INSTALL_LOG_FILE:-/var/log/omarchy-in
 export PATH="$OMARCHY_PATH/bin:$PATH"
 
 source "$OMARCHY_INSTALL/helpers/logging.sh"
-source "$OMARCHY_INSTALL/hardware/all.sh"
+if [[ ${OMARCHY_PLATFORM:-$(omarchy-platform 2>/dev/null || echo arch)} == "debian" ]]; then
+  source "$OMARCHY_INSTALL/debian/hardware/all.sh"
+else
+  source "$OMARCHY_INSTALL/hardware/all.sh"
+fi

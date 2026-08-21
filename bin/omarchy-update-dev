@@ -4,6 +4,26 @@
 
 set -euo pipefail
 
+platform=${OMARCHY_PLATFORM:-$(omarchy-platform 2>/dev/null || echo arch)}
+
+if [[ $platform == "debian" && $OMARCHY_PATH == "/usr/share/omarchy" ]]; then
+  [[ -d $OMARCHY_PATH/.git ]] || {
+    echo -e "\e[33m\nSkip Omarchy source update (install is not a Git checkout)\e[0m"
+    exit 0
+  }
+
+  echo -e "\e[32m\nUpdate Omarchy source checkout\e[0m"
+  sudo git -C "$OMARCHY_PATH" pull --ff-only
+  sudo env \
+    OMARCHY_PLATFORM=debian \
+    OMARCHY_PATH="$OMARCHY_PATH" \
+    OMARCHY_INSTALL="$OMARCHY_PATH/install" \
+    OMARCHY_INSTALL_USER="$USER" \
+    PATH="$OMARCHY_PATH/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+    bash -eE -c 'source "$OMARCHY_INSTALL/helpers/logging.sh"; source "$OMARCHY_INSTALL/debian/install-assets.sh"'
+  exit 0
+fi
+
 [[ $OMARCHY_PATH != "/usr/share/omarchy" ]] || exit 0
 
 if ! git -C "$OMARCHY_PATH" rev-parse --is-inside-work-tree >/dev/null 2>&1; then

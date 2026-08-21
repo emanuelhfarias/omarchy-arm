@@ -1,0 +1,9 @@
+# Hyprland desktop packages selected explicitly from Trixie Backports.
+
+hyprland
+hyprland-guiutils
+hyprpicker
+hyprsunset
+quickshell
+uwsm
+xdg-desktop-portal-hyprland

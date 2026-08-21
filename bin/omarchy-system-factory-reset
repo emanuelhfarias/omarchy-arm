@@ -5,6 +5,11 @@
 # omarchy:requires-sudo=true
 # omarchy:examples=sudo omarchy-system-factory-reset
 
+if [[ ${OMARCHY_PLATFORM:-$(omarchy-platform 2>/dev/null || echo arch)} == "debian" ]]; then
+  echo "Error: factory reset is not supported on Debian." >&2
+  exit 1
+fi
+
 # Returns the machine to provisioning state — fully installed, no user, first-boot
 # setup pending — the state you want before selling or handing the machine on.
 #

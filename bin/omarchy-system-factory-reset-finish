@@ -4,6 +4,11 @@
 # omarchy:requires-sudo=true
 # omarchy:hidden=true
 
+if [[ ${OMARCHY_PLATFORM:-$(omarchy-platform 2>/dev/null || echo arch)} == "debian" ]]; then
+  echo "Error: factory reset is not supported on Debian." >&2
+  exit 1
+fi
+
 # Runs once, early on the first boot after omarchy-system-factory-reset, via
 # omarchy-system-factory-reset-finish.service (armed by /var/lib/omarchy/provisioning/wipe-pending).
 # Ordered before home.mount/var-log.mount so @home and @log can be dropped and

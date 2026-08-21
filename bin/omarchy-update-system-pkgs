@@ -5,6 +5,19 @@
 
 set -e
 
+platform=${OMARCHY_PLATFORM:-$(omarchy-platform 2>/dev/null || echo arch)}
+
+if [[ $platform == "debian" ]]; then
+  echo -e "\e[32m\nUpdate system packages\e[0m"
+  sudo apt-get update
+  if [[ -n ${OMARCHY_UPDATE_UNATTENDED:-} ]]; then
+    sudo env DEBIAN_FRONTEND=noninteractive apt-get full-upgrade -y
+  else
+    sudo apt-get full-upgrade
+  fi
+  exit 0
+fi
+
 # The conflict handler's last resort: pacman puts its questions to the person
 # running the update instead of answering them itself. Nothing here may capture
 # a stream, because an upgrade without --noconfirm prompts on stderr. The

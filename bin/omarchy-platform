@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# omarchy:summary=Print the operating-system platform used by Omarchy
+# omarchy:hidden=true
+
+set -euo pipefail
+
+os_release_file=${OMARCHY_OS_RELEASE_FILE:-/etc/os-release}
+
+[[ -r $os_release_file ]] || {
+  echo unknown
+  exit 1
+}
+
+platform_id=""
+platform_like=""
+
+while IFS='=' read -r key value; do
+  value=${value#\"}
+  value=${value%\"}
+
+  case "$key" in
+    ID) platform_id=$value ;;
+    ID_LIKE) platform_like=$value ;;
+  esac
+done <"$os_release_file"
+
+case "$platform_id $platform_like" in
+  *debian*) echo debian ;;
+  *arch*) echo arch ;;
+  *)
+    echo unknown
+    exit 1
+    ;;
+esac

@@ -5,6 +5,28 @@
 
 set -e
 
+platform=${OMARCHY_PLATFORM:-$(omarchy-platform 2>/dev/null || echo arch)}
+
+if [[ $platform == "debian" ]]; then
+  simulation=$(apt-get --simulate autoremove 2>/dev/null || true)
+  orphans=$(printf '%s\n' "$simulation" | awk '/^Remv / { print $2 }')
+  [[ -n $orphans ]] || exit 0
+
+  echo -e "\e[32m\nOrphan system packages\e[0m"
+  printf '  %s\n' $orphans
+  echo
+
+  if [[ ! -t 0 || ! -t 1 ]]; then
+    echo "Orphaned packages found. Re-run omarchy-update-orphan-pkgs in a terminal to review/remove them."
+    exit 0
+  fi
+
+  if gum confirm --default=false "Remove these orphaned packages?"; then
+    sudo apt-get autoremove
+  fi
+  exit 0
+fi
+
 mapfile -t orphans < <(pacman -Qtdq 2>/dev/null || true)
 (( ${#orphans[@]} )) || exit 0
 

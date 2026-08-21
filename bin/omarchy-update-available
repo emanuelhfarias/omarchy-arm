@@ -5,8 +5,9 @@
 set -euo pipefail
 
 updates=()
+platform=${OMARCHY_PLATFORM:-$(omarchy-platform 2>/dev/null || echo arch)}
 
-if [[ $OMARCHY_PATH != "/usr/share/omarchy" ]]; then
+if [[ $OMARCHY_PATH != "/usr/share/omarchy" || ( $platform == "debian" && -e $OMARCHY_PATH/.git ) ]]; then
   upstream=$(git -C "$OMARCHY_PATH" rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' 2>/dev/null || true)
   if [[ -n $upstream ]]; then
     GIT_TERMINAL_PROMPT=0 timeout 10 git -C "$OMARCHY_PATH" fetch --quiet 2>/dev/null || true
@@ -20,19 +21,25 @@ if [[ $OMARCHY_PATH != "/usr/share/omarchy" ]]; then
   fi
 fi
 
-package=""
-if pacman -Qq omarchy-dev >/dev/null 2>&1; then
-  package=omarchy-dev
-elif pacman -Qq omarchy >/dev/null 2>&1; then
-  package=omarchy
-fi
+if [[ $platform == "debian" ]]; then
+  while IFS= read -r update; do
+    [[ -n $update ]] && updates+=("$update")
+  done < <(apt-get --simulate upgrade 2>/dev/null | awk '/^Inst / { print $2, $3, $4 }')
+else
+  package=""
+  if pacman -Qq omarchy-dev >/dev/null 2>&1; then
+    package=omarchy-dev
+  elif pacman -Qq omarchy >/dev/null 2>&1; then
+    package=omarchy
+  fi
 
-if [[ -n $package ]]; then
-  update=$(checkupdates --nocolor 2>/dev/null | awk -v package="$package" '$1 == package { print; exit }' || true)
-fi
+  if [[ -n $package ]]; then
+    update=$(checkupdates --nocolor 2>/dev/null | awk -v package="$package" '$1 == package { print; exit }' || true)
+  fi
 
-if [[ -n ${update:-} ]]; then
-  updates+=("$update")
+  if [[ -n ${update:-} ]]; then
+    updates+=("$update")
+  fi
 fi
 
 if (( ${#updates[@]} > 0 )); then

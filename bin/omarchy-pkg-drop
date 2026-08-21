@@ -4,21 +4,60 @@
 # omarchy:args=<packages...>
 # omarchy:requires-sudo=true
 
+set -eo pipefail
+
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+platform=${OMARCHY_PLATFORM:-$("$script_dir/omarchy-platform" 2>/dev/null || echo arch)}
 installed=()
-declare -A installed_exact=()
-declare -A selected=()
 
-while IFS= read -r package_name; do
-  installed_exact[$package_name]=1
-done < <(pacman -Qq)
+selected_contains() {
+  local candidate=$1
+  local selected_package
 
-for pkg in "$@"; do
-  if [[ -n ${installed_exact[$pkg]} && -z ${selected[$pkg]} ]]; then
-    installed+=("$pkg")
-    selected[$pkg]=1
+  for selected_package in "${installed[@]}"; do
+    [[ $selected_package == "$candidate" ]] && return 0
+  done
+
+  return 1
+}
+
+if [[ $platform == "debian" ]]; then
+  if [[ -n ${OMARCHY_PATH:-} ]]; then
+    omarchy_path=$OMARCHY_PATH
+  elif [[ -f $script_dir/../install/debian/package-resolver.sh ]]; then
+    omarchy_path=$(cd -- "$script_dir/.." && pwd)
+  else
+    omarchy_path=/usr/share/omarchy
   fi
-done
 
-if (( ${#installed[@]} > 0 )); then
-  sudo pacman -Rns --noconfirm "${installed[@]}"
+  export OMARCHY_PATH=$omarchy_path
+  source "$omarchy_path/install/debian/package-resolver.sh"
+
+  for requested in "$@"; do
+    IFS=$'\t' read -r _ packages _ < <(debian_package_record "$requested") || continue
+    read -r -a resolved <<<"$packages"
+    for package_name in "${resolved[@]}"; do
+      if debian_packages_installed "$package_name" && ! selected_contains "$package_name"; then
+        installed+=("$package_name")
+      fi
+    done
+  done
+
+  if ((${#installed[@]} > 0)); then
+    privilege=()
+    (( EUID == 0 )) || privilege=(sudo)
+    "${privilege[@]}" apt-get purge -y "${installed[@]}"
+  fi
+else
+  installed_package_names=$(pacman -Qq)
+
+  for pkg in "$@"; do
+    if printf '%s\n' "$installed_package_names" | grep -qxF "$pkg" && ! selected_contains "$pkg"; then
+      installed+=("$pkg")
+    fi
+  done
+
+  if ((${#installed[@]} > 0)); then
+    sudo pacman -Rns --noconfirm "${installed[@]}"
+  fi
 fi

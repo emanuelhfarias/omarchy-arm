@@ -10,8 +10,16 @@ if omarchy-cmd-missing fwupdmgr; then
   omarchy-pkg-add fwupd
 fi
 
-if [[ -d /sys/firmware/efi ]] && [[ -f /usr/lib/fwupd/efi/fwupdx64.efi ]]; then
-  sudo install -D /usr/lib/fwupd/efi/fwupdx64.efi /boot/EFI/arch/fwupdx64.efi
+architecture=$(omarchy-architecture 2>/dev/null || echo amd64)
+if [[ $architecture == "arm64" ]]; then
+  fwupd_efi_binary=fwupdaa64.efi
+else
+  fwupd_efi_binary=fwupdx64.efi
+fi
+
+if [[ ${OMARCHY_PLATFORM:-$(omarchy-platform 2>/dev/null || echo arch)} == "arch" ]] &&
+    [[ -d /sys/firmware/efi ]] && [[ -f /usr/lib/fwupd/efi/$fwupd_efi_binary ]]; then
+  sudo install -D "/usr/lib/fwupd/efi/$fwupd_efi_binary" "/boot/EFI/arch/$fwupd_efi_binary"
 fi
 
 fwupdmgr refresh --force

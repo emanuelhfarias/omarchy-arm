@@ -6,7 +6,9 @@
 sudo cp -r "$OMARCHY_PATH/default/plymouth/." /usr/share/plymouth/themes/omarchy/
 sudo plymouth-set-default-theme omarchy
 
-if omarchy-cmd-present limine-mkinitcpio; then
+if [[ ${OMARCHY_PLATFORM:-$(omarchy-platform 2>/dev/null || echo arch)} == "debian" ]]; then
+  sudo update-initramfs -u
+elif omarchy-cmd-present limine-mkinitcpio; then
   sudo limine-mkinitcpio
 else
   sudo mkinitcpio -P

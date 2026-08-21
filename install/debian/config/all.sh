@@ -1,0 +1,7 @@
+run_logged "$OMARCHY_INSTALL/config/theme-system.sh"
+run_logged "$OMARCHY_INSTALL/config/ssh-command-path.sh"
+run_logged "$OMARCHY_INSTALL/config/ssh-keepalive.sh"
+run_logged "$OMARCHY_INSTALL/config/docker.sh"
+run_logged "$OMARCHY_INSTALL/config/locate.sh"
+run_logged "$OMARCHY_INSTALL/debian/config/enable-services.sh"
+run_logged "$OMARCHY_INSTALL/debian/config/firewall.sh"

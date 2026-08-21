@@ -3,9 +3,17 @@
 # omarchy:summary=Show a fuzzy-finder TUI for picking packages installed on the system to be removed.
 # omarchy:requires-sudo=true
 
+platform=${OMARCHY_PLATFORM:-$(omarchy-platform 2>/dev/null || echo arch)}
+
+if [[ $platform == "debian" ]]; then
+  preview_command='apt-cache show {1}'
+else
+  preview_command='yay -Qi {1}'
+fi
+
 fzf_args=(
   --multi
-  --preview 'yay -Qi {1}'
+  --preview "$preview_command"
   --preview-label='alt-p: toggle description, alt-j/k: scroll, tab: multi-select'
   --preview-label-pos='bottom'
   --preview-window 'down:65%:wrap'
@@ -15,10 +23,13 @@ fzf_args=(
   --color 'pointer:red,marker:red'
 )
 
-pkg_names=$(yay -Qqe | fzf "${fzf_args[@]}")
+if [[ $platform == "debian" ]]; then
+  pkg_names=$(dpkg-query -W -f='${binary:Package}\n' | sed 's/:.*$//' | sort -u | fzf "${fzf_args[@]}")
+else
+  pkg_names=$(yay -Qqe | fzf "${fzf_args[@]}")
+fi
 
 if [[ -n $pkg_names ]]; then
-  # Convert newline-separated selections to space-separated for yay
-  echo "$pkg_names" | tr '\n' ' ' | xargs sudo pacman -Rns --noconfirm
+  echo "$pkg_names" | xargs omarchy-pkg-drop
   omarchy-show-done
 fi
