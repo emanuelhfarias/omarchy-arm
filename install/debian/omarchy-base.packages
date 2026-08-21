@@ -81,6 +81,7 @@ polkitd
 power-profiles-daemon
 python3-gi
 python3-nautilus
+qml6-module-qtquick-effects
 qrencode
 qt6-image-formats-plugins
 ripgrep

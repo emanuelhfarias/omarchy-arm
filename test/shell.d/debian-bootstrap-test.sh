@@ -31,6 +31,10 @@ if [[ -z $packages_guard_end || -z $first_package_install ]] || (( first_package
 fi
 pass "Debian bootstrap installs newly added packages on rerun"
 
+grep -qxF qml6-module-qtquick-effects "$base_packages" ||
+  fail "Debian installs the Qt Quick effects required by Omarchy shell plugins"
+pass "Debian installs the Omarchy shell QML effects module"
+
 grep -q 'systemctl mask --now sddm.service' "$bootstrap" ||
   fail "Debian bootstrap masks SDDM while package installation is incomplete"
 grep -q 'systemctl unmask sddm.service' "$services" ||
