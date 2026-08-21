@@ -90,7 +90,6 @@ slurp
 socat
 starship
 system-config-printer
-systemd-resolved
 systemd-zram-generator
 tesseract-ocr
 tesseract-ocr-eng

@@ -134,6 +134,26 @@ read_packages() {
   sed -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' "$1"
 }
 
+require_package_network() {
+  local attempt
+
+  for attempt in {1..5}; do
+    if getent ahosts deb.debian.org >/dev/null 2>&1; then
+      return 0
+    fi
+    echo "Waiting for DNS to resolve deb.debian.org ($attempt/5)..."
+    sleep 2
+  done
+
+  echo "Error: Debian package servers cannot be resolved. Check the VM network and /etc/resolv.conf, then rerun the bootstrap." >&2
+  return 1
+}
+
+apt_get() {
+  require_package_network
+  sudo env DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=5 "$@"
+}
+
 echo "Installing Omarchy for Debian 13 $architecture as $TARGET_USER"
 
 if ! phase_done apt-sources; then
@@ -145,8 +165,8 @@ Suites: $BACKPORTS_SUITE
 Components: main contrib non-free non-free-firmware
 Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
 EOF
-  sudo apt-get update
-  sudo apt-get install -y --no-install-recommends ca-certificates curl git sudo
+  apt_get update
+  apt_get install -y --no-install-recommends ca-certificates curl git sudo
   mark_phase apt-sources
 fi
 
@@ -165,17 +185,21 @@ fi
 
 if ! phase_done packages; then
   echo "==> Install Debian desktop packages"
+  # A failed package download must not leave a display manager offering an
+  # unusable session. Debian system setup unmasks SDDM only after the Omarchy
+  # session and assets are installed.
+  sudo systemctl mask --now sddm.service
   readarray -t stable_packages < <(read_packages "$SOURCE_DIR/install/debian/omarchy-base.packages")
   readarray -t backports_packages < <(read_packages "$SOURCE_DIR/install/debian/omarchy-backports.packages")
-  sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "${stable_packages[@]}"
-  sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+  apt_get install -y --no-install-recommends "${stable_packages[@]}"
+  apt_get install -y --no-install-recommends \
     -t "$BACKPORTS_SUITE" "${backports_packages[@]}"
   mark_phase packages
 fi
 
 echo "==> Install Omarchy runtime"
 sudo install -d -m 0755 "$INSTALL_ROOT"
-for entry in .git applications bin config default install migrations shell themes version logo.svg logo.txt; do
+for entry in .git applications bin config default etc install migrations shell themes version icon.png icon.txt logo.svg logo.txt; do
   [[ -e $SOURCE_DIR/$entry ]] || continue
   sudo cp -a "$SOURCE_DIR/$entry" "$INSTALL_ROOT/"
 done
