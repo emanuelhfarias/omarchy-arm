@@ -9,6 +9,7 @@ bootstrap="$ROOT/bootstrap/debian"
 services="$ROOT/install/debian/config/enable-services.sh"
 install_assets="$ROOT/install/debian/install-assets.sh"
 sddm_config="$ROOT/etc/sddm.conf.d/10-wayland.conf"
+sddm_theme="$ROOT/default/sddm/omarchy/Main.qml"
 
 if grep -qxF systemd-resolved "$base_packages"; then
   fail "Debian bootstrap does not replace DNS ownership during package installation"
@@ -41,6 +42,12 @@ if grep -q 'sddm-wayland.conf' "$install_assets"; then
   fail "Debian assets do not overwrite the shared SDDM configuration"
 fi
 pass "Debian installs the supported Hyprland launcher for the SDDM greeter"
+
+grep -q 'userModel.lastUser.length > 0' "$sddm_theme" ||
+  fail "SDDM uses the remembered user after a successful login"
+grep -q 'userModel.data(userModel.index(0, 0), Qt.UserRole + 1)' "$sddm_theme" ||
+  fail "SDDM selects the first visible user before the first successful login"
+pass "SDDM can authenticate a user on a fresh installation"
 
 asset_install_line=$(grep -n '^echo "==> Install Omarchy system assets"' "$bootstrap" | cut -d: -f1)
 system_config_guard_line=$(grep -n '^if ! phase_done system-config; then' "$bootstrap" | cut -d: -f1)
