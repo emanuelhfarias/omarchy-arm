@@ -80,6 +80,13 @@ grep -qxF '[colors]' "$foot_template" ||
 if grep -q '^\[colors-dark\]$' "$foot_template"; then
   fail "Foot theme does not use an unsupported Debian section"
 fi
+grep -qxF '[cursor]' "$foot_template" ||
+  fail "Foot theme uses Debian 13's cursor section"
+grep -q '^color={{ background_strip }} {{ bright_foreground_strip }}$' "$foot_template" ||
+  fail "Foot theme places its cursor colors under the supported key"
+if grep -q '^cursor=' "$foot_template"; then
+  fail "Foot theme does not place cursor configuration in the colors section"
+fi
 grep -q 'echo "==> Refresh the current Omarchy theme"' "$bootstrap" ||
   fail "Debian bootstrap regenerates existing rendered theme files"
 pass "Debian bootstrap repairs rendered Foot themes on rerun"
