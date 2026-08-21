@@ -11,7 +11,16 @@ if [[ ${1:-} == "--install" ]]; then
 fi
 
 if (($# == 0)); then
-  desktop_id=$(xdg-terminal-exec --print-id 2>/dev/null || true)
+  terminal_list=${XDG_CONFIG_HOME:-$HOME/.config}/xdg-terminals.list
+  if [[ ! -r $terminal_list ]]; then
+    terminal_list=/usr/share/xdg-terminal-exec/hyprland-xdg-terminals.list
+  fi
+
+  if [[ -r $terminal_list ]]; then
+    desktop_id=$(awk '!/^[[:space:]]*(#|$)/ { print $1; exit }' "$terminal_list")
+  else
+    desktop_id=$(xdg-terminal-exec --print-id 2>/dev/null || true)
+  fi
   desktop_id=${desktop_id%%:*}
   case "$desktop_id" in
   Alacritty.desktop) echo "alacritty" ;;

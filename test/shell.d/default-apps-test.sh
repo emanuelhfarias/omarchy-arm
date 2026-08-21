@@ -52,6 +52,11 @@ set) printf '%s\n' "$3" >"$OMARCHY_TEST_BROWSER_FILE" ;;
 esac
 SH
 
+cat >"$mock_bin/xdg-terminal-exec" <<'SH'
+#!/bin/bash
+printf 'xdg-terminal-exec:%s\n' "$*" >>"$OMARCHY_TEST_TERMINAL_LOG"
+SH
+
 cat >"$mock_bin/omarchy-test-installer" <<'SH'
 #!/bin/bash
 installer=${0##*/}
@@ -133,6 +138,12 @@ export OMARCHY_TEST_TERMINAL_LOG="$terminal_log"
 export OMARCHY_TEST_NOTIFICATION_LOG="$notification_log"
 export OMARCHY_TEST_SETUP_LOG="$setup_log"
 export OMARCHY_TEST_BROWSER_FILE="$browser_file"
+
+printf 'foot.desktop\n' >"$test_home/.config/xdg-terminals.list"
+: >"$terminal_log"
+[[ $(omarchy-default-terminal) == "foot" ]] || fail "terminal default is read from the preference file"
+[[ ! -s $terminal_log ]] || fail "terminal default lookup does not invoke xdg-terminal-exec"
+pass "terminal default lookup does not launch a terminal"
 
 assert_missing_opens_installer() {
   local type=$1
