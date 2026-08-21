@@ -52,6 +52,13 @@ assert(rescale(2160, 1.5, 40) == 700, "and at a fractional scale")
 -- console short.
 assert(rescale(1440, 1, 0) == 720, "a monitor with nothing reserved")
 
+-- Debian's packaged Hyprland does not expose the reserved table through its
+-- Lua monitor object. Treat that as an unreserved output instead of throwing
+-- continuously from the layout callback.
+monitor = { height = 1440, scale = 1 }
+handlers["monitor.layout_changed"]()
+assert(current().gaps_out.bottom == 720, "a monitor without reserved metadata")
+
 -- The console stays flush with the top and the sides, the way a Quake console
 -- drops in, and keeps its seed across every refit.
 local final = current()

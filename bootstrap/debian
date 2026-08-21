@@ -183,17 +183,23 @@ fi
   exit 1
 }
 
+echo "==> Install Debian desktop packages"
+packages_incomplete=0
 if ! phase_done packages; then
-  echo "==> Install Debian desktop packages"
   # A failed package download must not leave a display manager offering an
   # unusable session. Debian system setup unmasks SDDM only after the Omarchy
   # session and assets are installed.
   sudo systemctl mask --now sddm.service
-  readarray -t stable_packages < <(read_packages "$SOURCE_DIR/install/debian/omarchy-base.packages")
-  readarray -t backports_packages < <(read_packages "$SOURCE_DIR/install/debian/omarchy-backports.packages")
-  apt_get install -y --no-install-recommends "${stable_packages[@]}"
-  apt_get install -y --no-install-recommends \
-    -t "$BACKPORTS_SUITE" "${backports_packages[@]}"
+  packages_incomplete=1
+fi
+
+readarray -t stable_packages < <(read_packages "$SOURCE_DIR/install/debian/omarchy-base.packages")
+readarray -t backports_packages < <(read_packages "$SOURCE_DIR/install/debian/omarchy-backports.packages")
+apt_get install -y --no-install-recommends "${stable_packages[@]}"
+apt_get install -y --no-install-recommends \
+  -t "$BACKPORTS_SUITE" "${backports_packages[@]}"
+
+if (( packages_incomplete )); then
   mark_phase packages
 fi
 
@@ -204,6 +210,9 @@ for entry in .git applications bin config default etc install migrations shell t
   sudo cp -a "$SOURCE_DIR/$entry" "$INSTALL_ROOT/"
 done
 mark_phase runtime
+
+echo "==> Install Omarchy fonts"
+sudo bash -eE "$INSTALL_ROOT/install/debian/install-fonts.sh"
 
 echo "==> Install Omarchy system assets"
 sudo env \
@@ -241,6 +250,22 @@ if ! phase_done user-config; then
     PATH="$INSTALL_ROOT/bin:/usr/local/bin:/usr/bin:/bin:$target_home/.local/bin" \
     "$INSTALL_ROOT/bin/omarchy-provision-user" --first-install
   mark_phase user-config
+fi
+
+target_home=$(getent passwd "$TARGET_USER" | cut -d: -f6)
+theme_name_file="$target_home/.local/state/omarchy/current/theme.name"
+if sudo -u "$TARGET_USER" test -s "$theme_name_file"; then
+  echo "==> Refresh the current Omarchy theme"
+  theme_name=$(sudo -u "$TARGET_USER" cat "$theme_name_file")
+  sudo -u "$TARGET_USER" env \
+    HOME="$target_home" \
+    USER="$TARGET_USER" \
+    OMARCHY_PLATFORM=debian \
+    OMARCHY_PATH="$INSTALL_ROOT" \
+    OMARCHY_THEME_HEADLESS=1 \
+    OMARCHY_THEME_SKIP_BACKGROUND=1 \
+    PATH="$INSTALL_ROOT/bin:/usr/local/bin:/usr/bin:/bin:$target_home/.local/bin" \
+    "$INSTALL_ROOT/bin/omarchy-theme-set" "$theme_name"
 fi
 
 if ! phase_done health-check; then
