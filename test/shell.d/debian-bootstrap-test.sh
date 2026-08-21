@@ -7,6 +7,8 @@ source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/base-test.sh"
 base_packages="$ROOT/install/debian/omarchy-base.packages"
 bootstrap="$ROOT/bootstrap/debian"
 services="$ROOT/install/debian/config/enable-services.sh"
+install_assets="$ROOT/install/debian/install-assets.sh"
+sddm_config="$ROOT/etc/sddm.conf.d/10-wayland.conf"
 
 if grep -qxF systemd-resolved "$base_packages"; then
   fail "Debian bootstrap does not replace DNS ownership during package installation"
@@ -32,3 +34,17 @@ for required_entry in applications bin config default etc install migrations she
   fi
 done
 pass "Debian runtime copy contains every required source tree and branding asset"
+
+grep -qxF 'CompositorCommand=start-hyprland -- --config /usr/share/sddm/hyprland.lua' "$sddm_config" ||
+  fail "SDDM starts its Hyprland greeter through start-hyprland"
+if grep -q 'sddm-wayland.conf' "$install_assets"; then
+  fail "Debian assets do not overwrite the shared SDDM configuration"
+fi
+pass "Debian installs the supported Hyprland launcher for the SDDM greeter"
+
+asset_install_line=$(grep -n '^echo "==> Install Omarchy system assets"' "$bootstrap" | cut -d: -f1)
+system_config_guard_line=$(grep -n '^if ! phase_done system-config; then' "$bootstrap" | cut -d: -f1)
+if [[ -z $asset_install_line || -z $system_config_guard_line ]] || (( asset_install_line >= system_config_guard_line )); then
+  fail "Debian bootstrap refreshes system assets on every rerun"
+fi
+pass "Debian bootstrap refreshes system assets after runtime updates"

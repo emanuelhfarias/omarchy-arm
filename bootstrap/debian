@@ -205,16 +205,18 @@ for entry in .git applications bin config default etc install migrations shell t
 done
 mark_phase runtime
 
+echo "==> Install Omarchy system assets"
+sudo env \
+  OMARCHY_PLATFORM=debian \
+  OMARCHY_LOG_TO_STDOUT=1 \
+  OMARCHY_PATH="$INSTALL_ROOT" \
+  OMARCHY_INSTALL="$INSTALL_ROOT/install" \
+  OMARCHY_INSTALL_USER="$TARGET_USER" \
+  PATH="$INSTALL_ROOT/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+  bash -eE -c 'source "$OMARCHY_INSTALL/helpers/logging.sh"; source "$OMARCHY_INSTALL/debian/install-assets.sh"'
+
 if ! phase_done system-config; then
   echo "==> Configure the Debian system"
-  sudo env \
-    OMARCHY_PLATFORM=debian \
-    OMARCHY_LOG_TO_STDOUT=1 \
-    OMARCHY_PATH="$INSTALL_ROOT" \
-    OMARCHY_INSTALL="$INSTALL_ROOT/install" \
-    OMARCHY_INSTALL_USER="$TARGET_USER" \
-    PATH="$INSTALL_ROOT/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
-    bash -eE -c 'source "$OMARCHY_INSTALL/helpers/logging.sh"; source "$OMARCHY_INSTALL/debian/install-assets.sh"'
   sudo env \
     OMARCHY_PLATFORM=debian \
     OMARCHY_LOG_TO_STDOUT=1 \

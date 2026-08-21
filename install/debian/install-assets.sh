@@ -65,7 +65,6 @@ done
 
 if [[ -d $OMARCHY_PATH/etc/sddm.conf.d ]]; then
   cp -a "$OMARCHY_PATH/etc/sddm.conf.d" /etc/
-  install -m 0644 "$OMARCHY_INSTALL/debian/assets/sddm-wayland.conf" /etc/sddm.conf.d/10-wayland.conf
 fi
 
 for sudoers_file in "$OMARCHY_PATH"/etc/sudoers.d/*; do
