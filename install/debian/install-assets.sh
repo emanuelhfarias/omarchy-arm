@@ -25,6 +25,7 @@ install -d -m 0755 \
   /usr/share/xdg-terminal-exec
 
 cp -an "$OMARCHY_PATH/config/." /etc/skel/.config/
+install -Dm0644 "$OMARCHY_PATH/install/debian/defaults/hypr/monitors.lua" /etc/skel/.config/hypr/monitors.lua
 cp -an "$OMARCHY_PATH/applications/." /etc/skel/.local/share/applications/
 install -m 0644 "$OMARCHY_PATH/default/hypr/toggles/flags.lua" /etc/skel/.local/state/omarchy/toggles/hypr/flags.lua
 rm -f \

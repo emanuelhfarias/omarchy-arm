@@ -8,6 +8,7 @@ base_packages="$ROOT/install/debian/omarchy-base.packages"
 bootstrap="$ROOT/bootstrap/debian"
 services="$ROOT/install/debian/config/enable-services.sh"
 install_assets="$ROOT/install/debian/install-assets.sh"
+debian_monitors="$ROOT/install/debian/defaults/hypr/monitors.lua"
 sddm_config="$ROOT/etc/sddm.conf.d/10-wayland.conf"
 sddm_theme="$ROOT/default/sddm/omarchy/Main.qml"
 font_installer="$ROOT/install/debian/install-fonts.sh"
@@ -57,6 +58,16 @@ for required_entry in applications bin config default etc install migrations she
   fi
 done
 pass "Debian runtime copy contains every required source tree and branding asset"
+
+grep -q 'output = "Virtual-1"' "$debian_monitors" ||
+  fail "Debian fresh installs target the Parallels virtual display"
+grep -q 'mode = "2560x1600@59.99"' "$debian_monitors" ||
+  fail "Debian fresh installs use the tested Parallels Retina mode"
+grep -q 'local omarchy_monitor_scale = 2' "$debian_monitors" ||
+  fail "Debian fresh installs use the tested Parallels Retina scale"
+grep -q 'install/debian/defaults/hypr/monitors.lua' "$install_assets" ||
+  fail "Debian assets install the Parallels monitor defaults into the skeleton"
+pass "Debian fresh installs include the tested Parallels display configuration"
 
 grep -qxF 'CompositorCommand=start-hyprland -- --config /usr/share/sddm/hyprland.lua' "$sddm_config" ||
   fail "SDDM starts its Hyprland greeter through start-hyprland"

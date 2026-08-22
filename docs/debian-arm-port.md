@@ -166,7 +166,7 @@ Log out of the Omarchy session and log back in after changing the monitor mode; 
 hyprctl monitors -j | jq -r '.[] | "mode=\(.width)x\(.height) scale=\(.scale) logical=\(.width / .scale)x\(.height / .scale)"'
 ```
 
-The tested result is `mode=2560x1600 scale=2.00 logical=1280x800`. Different Mac displays, external monitors, window sizes, and Parallels versions may require another advertised mode or scale, so the bootstrap leaves `config/hypr/monitors.lua` on its portable `preferred` and `auto` defaults.
+The tested result is `mode=2560x1600 scale=2.00 logical=1280x800`. This Debian ARM distribution installs that tested configuration for new users from `install/debian/defaults/hypr/monitors.lua`; it does not overwrite an existing user's monitor configuration. Different Mac displays, external monitors, window sizes, and Parallels versions may require another advertised mode or scale.
 
 ### Parallels Desktop keyboard shortcuts
 
