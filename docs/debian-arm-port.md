@@ -140,6 +140,10 @@ cd omarchy-arm
 
 The source bootstrap installs the checkout into `/usr/share/omarchy`. It is suitable for port development and test machines; the signed Debian packages remain the production release gate.
 
+### Parallels Desktop keyboard shortcuts
+
+When running the Debian arm64 VM in Parallels Desktop on macOS, open **Parallels Desktop Preferences → Shortcuts → macOS System Shortcuts** and set **Send macOS system shortcuts** to **Always**. Omarchy treats the Mac Command key as Super, and the **Always** setting is required for combinations such as Command+Space to reach the VM as Super+Space instead of being handled by macOS. Super+Space opens the Omarchy menu, while other Super-based Omarchy keybindings depend on the same forwarding behavior.
+
 ## Existing-user configuration
 
 Debian Installer normally creates the user before Omarchy is installed, so installing files into `/etc/skel` is not enough. The bootstrap copies missing defaults only, then runs `omarchy-provision-user --first-install` as the target user.
