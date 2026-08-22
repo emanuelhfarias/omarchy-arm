@@ -140,6 +140,34 @@ cd omarchy-arm
 
 The source bootstrap installs the checkout into `/usr/share/omarchy`. It is suitable for port development and test machines; the signed Debian packages remain the production release gate.
 
+### Parallels Desktop display
+
+Parallels may expose `1024x768` as the preferred mode for its `Virtual-1` display, causing a 4:3 desktop, black bars, and an excessively large interface when Hyprland also selects scale 2. This is host-specific behavior and must not become the default monitor configuration for physical ARM machines or other virtual machines.
+
+For the tested Retina configuration, shut down the VM, open **VM Configuration → Hardware → Graphics**, and set **Resolution** to **More Space**. After starting the VM, confirm that Parallels advertises the tested mode:
+
+```bash
+hyprctl monitors -j | jq -r '.[] | .availableModes[]' | grep '^2560x1600@59.99Hz$'
+```
+
+If that command prints the mode, set the following values in `~/.config/hypr/monitors.lua`:
+
+```lua
+local omarchy_gdk_scale = 2
+local omarchy_monitor_scale = 2
+
+hl.env("GDK_SCALE", tostring(omarchy_gdk_scale))
+hl.monitor({ output = "Virtual-1", mode = "2560x1600@59.99", position = "auto", scale = omarchy_monitor_scale })
+```
+
+Log out of the Omarchy session and log back in after changing the monitor mode; a live `hyprctl reload` may retain the mode selected when the compositor started. Verify the active configuration:
+
+```bash
+hyprctl monitors -j | jq -r '.[] | "mode=\(.width)x\(.height) scale=\(.scale) logical=\(.width / .scale)x\(.height / .scale)"'
+```
+
+The tested result is `mode=2560x1600 scale=2.00 logical=1280x800`. Different Mac displays, external monitors, window sizes, and Parallels versions may require another advertised mode or scale, so the bootstrap leaves `config/hypr/monitors.lua` on its portable `preferred` and `auto` defaults.
+
 ### Parallels Desktop keyboard shortcuts
 
 When running the Debian arm64 VM in Parallels Desktop on macOS, open **Parallels Desktop Preferences → Shortcuts → macOS System Shortcuts** and set **Send macOS system shortcuts** to **Always**. Omarchy treats the Mac Command key as Super, and the **Always** setting is required for combinations such as Command+Space to reach the VM as Super+Space instead of being handled by macOS. Super+Space opens the Omarchy menu, while other Super-based Omarchy keybindings depend on the same forwarding behavior.
