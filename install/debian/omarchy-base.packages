@@ -39,6 +39,7 @@ fonts-noto-color-emoji
 fonts-noto-core
 foot
 fzf
+gawk
 git
 gnome-disk-utility
 gnome-keyring

@@ -38,6 +38,12 @@ grep -qxF qml6-module-qtquick-effects "$base_packages" ||
   fail "Debian installs the Qt Quick effects required by Omarchy shell plugins"
 pass "Debian installs the Omarchy shell QML effects module"
 
+grep -qxF gawk "$base_packages" ||
+  fail "Debian installs GNU awk for the keybindings parser"
+grep -q '^  gawk ' "$ROOT/bin/omarchy-menu-keybindings" ||
+  fail "Keybindings parser explicitly uses GNU awk"
+pass "Debian installs the parser required by the keybindings menu"
+
 grep -q 'systemctl mask --now sddm.service' "$bootstrap" ||
   fail "Debian bootstrap masks SDDM while package installation is incomplete"
 grep -q 'systemctl unmask sddm.service' "$services" ||
