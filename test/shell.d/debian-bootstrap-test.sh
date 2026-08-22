@@ -12,6 +12,9 @@ sddm_config="$ROOT/etc/sddm.conf.d/10-wayland.conf"
 sddm_theme="$ROOT/default/sddm/omarchy/Main.qml"
 font_installer="$ROOT/install/debian/install-fonts.sh"
 foot_template="$ROOT/default/themed/foot.ini.tpl"
+user_defaults="$ROOT/install/user/debian-defaults.sh"
+test_tmp=$(mktemp -d)
+trap 'rm -rf "$test_tmp"' EXIT
 
 if grep -qxF systemd-resolved "$base_packages"; then
   fail "Debian bootstrap does not replace DNS ownership during package installation"
@@ -68,6 +71,41 @@ if [[ -z $asset_install_line || -z $system_config_guard_line ]] || (( asset_inst
   fail "Debian bootstrap refreshes system assets on every rerun"
 fi
 pass "Debian bootstrap refreshes system assets after runtime updates"
+
+if grep -q 'cp -an "$OMARCHY_PATH/default/hypr/toggles/."' "$install_assets"; then
+  fail "Debian skeleton does not enable optional Hyprland toggles"
+fi
+grep -q 'default/hypr/toggles/flags.lua' "$install_assets" ||
+  fail "Debian skeleton retains the inert Hyprland toggle placeholder"
+pass "Debian skeleton starts with window gaps and borders enabled"
+
+defaults_home="$test_tmp/defaults-home"
+mkdir -p "$defaults_home/.local/state/omarchy/toggles/hypr"
+printf 'debian bashrc\n' >"$defaults_home/.bashrc"
+cp "$ROOT/default/hypr/toggles/window-no-gaps.lua" "$defaults_home/.local/state/omarchy/toggles/hypr/"
+cp "$ROOT/default/hypr/toggles/single-window-aspect-ratio.lua" "$defaults_home/.local/state/omarchy/toggles/hypr/"
+touch "$defaults_home/.local/state/omarchy/toggles/hypr/custom.lua"
+
+HOME="$defaults_home" OMARCHY_PATH="$ROOT" bash -eE -c 'source "$1"' bash "$user_defaults"
+
+cmp -s "$ROOT/default/bashrc" "$defaults_home/.bashrc" ||
+  fail "Debian reconciliation installs the Omarchy bashrc"
+grep -qxF 'debian bashrc' "$defaults_home/.bashrc.before-omarchy" ||
+  fail "Debian reconciliation backs up the previous bashrc"
+[[ ! -e $defaults_home/.local/state/omarchy/toggles/hypr/window-no-gaps.lua ]] ||
+  fail "Debian reconciliation removes the accidental no-gaps toggle"
+[[ ! -e $defaults_home/.local/state/omarchy/toggles/hypr/single-window-aspect-ratio.lua ]] ||
+  fail "Debian reconciliation removes the accidental single-window toggle"
+[[ -e $defaults_home/.local/state/omarchy/toggles/hypr/custom.lua ]] ||
+  fail "Debian reconciliation preserves unrelated user toggles"
+
+printf '# user customization\n' >>"$defaults_home/.bashrc"
+HOME="$defaults_home" OMARCHY_PATH="$ROOT" bash -eE -c 'source "$1"' bash "$user_defaults"
+grep -qxF '# user customization' "$defaults_home/.bashrc" ||
+  fail "Debian reconciliation runs only once per user"
+grep -q 'user/debian-defaults.sh' "$bootstrap" ||
+  fail "Debian bootstrap reconciles defaults for existing installations"
+pass "Debian bootstrap repairs prior user defaults without overwriting later changes"
 
 grep -qxF xz-utils "$base_packages" ||
   fail "Debian installs support for the pinned Nerd Font archive"

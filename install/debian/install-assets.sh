@@ -26,7 +26,10 @@ install -d -m 0755 \
 
 cp -an "$OMARCHY_PATH/config/." /etc/skel/.config/
 cp -an "$OMARCHY_PATH/applications/." /etc/skel/.local/share/applications/
-cp -an "$OMARCHY_PATH/default/hypr/toggles/." /etc/skel/.local/state/omarchy/toggles/hypr/
+install -m 0644 "$OMARCHY_PATH/default/hypr/toggles/flags.lua" /etc/skel/.local/state/omarchy/toggles/hypr/flags.lua
+rm -f \
+  /etc/skel/.local/state/omarchy/toggles/hypr/window-no-gaps.lua \
+  /etc/skel/.local/state/omarchy/toggles/hypr/single-window-aspect-ratio.lua
 cp -an "$OMARCHY_PATH/default/nautilus-python/extensions/." /etc/skel/.local/share/nautilus-python/extensions/
 cp -n "$OMARCHY_PATH/default/bashrc" /etc/skel/.bashrc
 

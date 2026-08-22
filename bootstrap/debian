@@ -253,6 +253,15 @@ if ! phase_done user-config; then
 fi
 
 target_home=$(getent passwd "$TARGET_USER" | cut -d: -f6)
+echo "==> Reconcile Debian user defaults"
+sudo -u "$TARGET_USER" env \
+  HOME="$target_home" \
+  USER="$TARGET_USER" \
+  OMARCHY_PATH="$INSTALL_ROOT" \
+  OMARCHY_INSTALL="$INSTALL_ROOT/install" \
+  PATH="$INSTALL_ROOT/bin:/usr/local/bin:/usr/bin:/bin:$target_home/.local/bin" \
+  bash -eE -c 'source "$OMARCHY_INSTALL/user/debian-defaults.sh"'
+
 theme_name_file="$target_home/.local/state/omarchy/current/theme.name"
 if sudo -u "$TARGET_USER" test -s "$theme_name_file"; then
   echo "==> Refresh the current Omarchy theme"
