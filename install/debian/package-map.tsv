@@ -12,7 +12,7 @@ noto-fonts	fonts-noto-core	stable	all
 noto-fonts-cjk	fonts-noto-cjk	stable	all	
 noto-fonts-emoji	fonts-noto-color-emoji	stable	all	
 bluez-utils	bluez	stable	all	
-docker	docker.io	stable	all	
+docker	docker.io docker-cli docker-buildx	stable	all
 docker-compose	docker-compose	stable	all	
 cups-pdf	printer-driver-cups-pdf	stable	all	Debian names the CUPS PDF backend after its printer-driver role
 fcitx5-gtk	fcitx5-frontend-gtk3	stable	all	

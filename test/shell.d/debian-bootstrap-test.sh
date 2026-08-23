@@ -45,6 +45,12 @@ grep -q '^  gawk ' "$ROOT/bin/omarchy-menu-keybindings" ||
   fail "Keybindings parser explicitly uses GNU awk"
 pass "Debian installs the parser required by the keybindings menu"
 
+for docker_package in docker.io docker-cli docker-buildx docker-compose; do
+  grep -qxF "$docker_package" "$base_packages" ||
+    fail "Debian installs the complete Docker toolchain: $docker_package"
+done
+pass "Debian installs the Docker daemon, client, Buildx, and Compose"
+
 grep -q 'systemctl mask --now sddm.service' "$bootstrap" ||
   fail "Debian bootstrap masks SDDM while package installation is incomplete"
 grep -q 'systemctl unmask sddm.service' "$services" ||

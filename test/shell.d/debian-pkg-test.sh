@@ -42,6 +42,12 @@ grep -q $'^apt-get\tinstall -y --no-install-recommends -t trixie-backports hyprl
   fail "Debian package add selects Backports explicitly"
 pass "Debian package add resolves stable and Backports packages"
 
+: >"$TEST_LOG"
+"$ROOT/bin/omarchy-pkg-add" docker
+grep -q $'^apt-get\tinstall -y --no-install-recommends docker.io docker-cli docker-buildx$' "$TEST_LOG" ||
+  fail "Debian Docker mapping installs the daemon, client, and Buildx"
+pass "Debian Docker package mapping includes the complete command-line toolchain"
+
 "$ROOT/bin/omarchy-pkg-present" libreoffice-fresh hyprland ||
   fail "Debian package presence checks resolved package names"
 pass "Debian package presence checks resolved package names"

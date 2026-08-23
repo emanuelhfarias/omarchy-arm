@@ -17,6 +17,8 @@ printer-driver-cups-pdf
 ddcutil
 dbus-user-session
 docker.io
+docker-buildx
+docker-cli
 docker-compose
 dosfstools
 evince
