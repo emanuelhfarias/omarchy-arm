@@ -16,6 +16,7 @@ sddm_theme="$ROOT/default/sddm/omarchy/Main.qml"
 font_installer="$ROOT/install/debian/install-fonts.sh"
 foot_template="$ROOT/default/themed/foot.ini.tpl"
 user_defaults="$ROOT/install/user/debian-defaults.sh"
+debian_user_setup="$ROOT/install/debian/user/all.sh"
 test_tmp=$(mktemp -d)
 trap 'rm -rf "$test_tmp"' EXIT
 
@@ -29,6 +30,28 @@ grep -q 'Acquire::Retries=5' "$bootstrap" ||
 grep -q 'getent ahosts deb.debian.org' "$bootstrap" ||
   fail "Debian bootstrap checks DNS before package operations"
 pass "Debian bootstrap checks and retries package network access"
+
+grep -q 'https://mise.jdx.dev/gpg-key.pub' "$bootstrap" ||
+  fail "Debian bootstrap downloads the official mise repository key"
+grep -q '24853EC9F655CE80B48E6C3A8B81C9D17413A06D' "$bootstrap" ||
+  fail "Debian bootstrap verifies the mise repository signing key"
+grep -q 'URIs: https://mise.jdx.dev/deb' "$bootstrap" ||
+  fail "Debian bootstrap configures the official mise package repository"
+grep -qxF mise "$base_packages" ||
+  fail "Debian installs mise as a base package"
+grep -q $'^mise-bin\tmise\tvendor\tall\t' "$ROOT/install/debian/package-map.tsv" ||
+  fail "Debian maps the upstream mise package identifier to the vendor package"
+if grep -qxF mise-bin "$ROOT/install/debian/unsupported-arm64.packages"; then
+  fail "Debian no longer marks mise as unsupported"
+fi
+grep -q 'user/mise-work.sh' "$debian_user_setup" ||
+  fail "Debian configures the mise work directory"
+grep -q 'user/mise.sh' "$debian_user_setup" ||
+  fail "Debian creates the mise-backed command wrappers"
+if grep -q 'omarchy-cmd-missing mise' "$debian_user_setup"; then
+  fail "Debian user setup treats mise as a required runtime"
+fi
+pass "Debian installs and configures mise from its signed repository"
 
 packages_guard_end=$(awk '/^if ! phase_done packages; then$/ { in_guard=1; next } in_guard && /^fi$/ { print NR; exit }' "$bootstrap")
 first_package_install=$(grep -n 'apt_get install -y --no-install-recommends "${stable_packages\[@\]}"' "$bootstrap" | cut -d: -f1)

@@ -48,6 +48,12 @@ grep -q $'^apt-get\tinstall -y --no-install-recommends docker.io docker-cli dock
   fail "Debian Docker mapping installs the daemon, client, and Buildx"
 pass "Debian Docker package mapping includes the complete command-line toolchain"
 
+: >"$TEST_LOG"
+"$ROOT/bin/omarchy-pkg-add" mise-bin
+grep -q $'^apt-get\tinstall -y --no-install-recommends mise$' "$TEST_LOG" ||
+  fail "Debian mise mapping installs the vendor package"
+pass "Debian maps the upstream mise package identifier"
+
 "$ROOT/bin/omarchy-pkg-present" libreoffice-fresh hyprland ||
   fail "Debian package presence checks resolved package names"
 pass "Debian package presence checks resolved package names"

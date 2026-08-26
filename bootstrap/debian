@@ -16,6 +16,7 @@ LOCAL_LOG=""
 SOURCE_DIR=""
 TARGET_USER=${OMARCHY_INSTALL_USER:-${SUDO_USER:-$USER}}
 TEMP_DIR=""
+MISE_KEY_FILE=""
 
 usage() {
   cat <<USAGE
@@ -116,6 +117,9 @@ cleanup() {
   if [[ -n $TEMP_DIR && -d $TEMP_DIR ]]; then
     rm -rf "$TEMP_DIR"
   fi
+  if [[ -n $MISE_KEY_FILE && -f $MISE_KEY_FILE ]]; then
+    rm -f "$MISE_KEY_FILE"
+  fi
   exit "$status"
 }
 trap cleanup EXIT
@@ -168,6 +172,36 @@ EOF
   apt_get update
   apt_get install -y --no-install-recommends ca-certificates curl git sudo
   mark_phase apt-sources
+fi
+
+if ! phase_done mise-source; then
+  echo "==> Configure the mise package repository"
+  apt_get install -y --no-install-recommends ca-certificates curl gnupg
+
+  MISE_KEY_FILE=$(mktemp)
+  curl -fsSL https://mise.jdx.dev/gpg-key.pub -o "$MISE_KEY_FILE"
+  mise_key_fingerprint=$(gpg --batch --show-keys --with-colons "$MISE_KEY_FILE" |
+    awk -F: '$1 == "fpr" { print $10; exit }')
+  if [[ $mise_key_fingerprint != "24853EC9F655CE80B48E6C3A8B81C9D17413A06D" ]]; then
+    echo "Error: the mise repository signing key has an unexpected fingerprint." >&2
+    exit 1
+  fi
+
+  sudo install -d -m 0755 /etc/apt/keyrings
+  sudo install -m 0644 "$MISE_KEY_FILE" /etc/apt/keyrings/mise-archive-keyring.pub
+  rm -f "$MISE_KEY_FILE"
+  MISE_KEY_FILE=""
+
+  sudo tee /etc/apt/sources.list.d/mise.sources >/dev/null <<EOF
+Types: deb
+URIs: https://mise.jdx.dev/deb
+Suites: stable
+Components: main
+Architectures: $architecture
+Signed-By: /etc/apt/keyrings/mise-archive-keyring.pub
+EOF
+  apt_get update
+  mark_phase mise-source
 fi
 
 if [[ -z $SOURCE_DIR ]]; then

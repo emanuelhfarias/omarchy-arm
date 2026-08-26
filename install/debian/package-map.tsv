@@ -66,7 +66,7 @@ herdr	-	unsupported	all	Requires an Omarchy-built Debian package
 kernel-modules-hook	-	unsupported	all	Arch kernel hook is not used on Debian
 lazydocker	-	unsupported	all	Requires a separately packaged arm64 build
 localsend	-	unsupported	all	Requires a separately packaged arm64 build
-mise-bin	-	unsupported	all	Requires an Omarchy-built Debian package
+mise-bin	mise	vendor	all	Installed from mise's signed Debian repository
 omacalc	-	unsupported	all	Requires an Omarchy-built Debian package
 omacut	-	unsupported	all	Requires an Omarchy-built Debian package
 omarchy-nvim	-	unsupported	all	Requires an Omarchy-built Debian package

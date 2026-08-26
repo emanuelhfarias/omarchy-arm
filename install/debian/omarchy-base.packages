@@ -69,6 +69,7 @@ libxkbcommon-tools
 lua5.4
 luarocks
 man-db
+mise
 mpv
 nautilus
 network-manager
