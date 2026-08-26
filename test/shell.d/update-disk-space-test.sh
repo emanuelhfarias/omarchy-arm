@@ -62,8 +62,15 @@ write_stub omarchy-snapshot '
 touch "$SNAPSHOT_MARKER"
 exit 0'
 
+write_stub sudo '
+if [[ ${1:-} == "-v" ]]; then
+  exit 0
+fi
+exec "$@"'
+
 for command in \
   omarchy-cmd-present \
+  omarchy-update-lock \
   omarchy-toggle-idle \
   pkexec \
   systemd-inhibit \

@@ -48,6 +48,7 @@ chmod +x "$stub_bin/git"
 
 run_dev_update() {
   OMARCHY_PATH="$1" \
+    OMARCHY_PLATFORM=arch \
     TEST_GIT_LOG="$git_log" \
     PATH="$stub_bin:$PATH" \
     "$ROOT/bin/omarchy-update-dev"
