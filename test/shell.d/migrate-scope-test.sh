@@ -12,10 +12,12 @@ test_home="$test_tmp/home"
 mkdir -p "$test_root/migrations" "$test_home"
 
 cat >"$test_root/migrations/100-first.sh" <<'SH'
+# omarchy:platforms=arch,debian
 [[ $OMARCHY_PATH == "$TEST_EXPECTED_OMARCHY_PATH" ]]
 echo first >>"$TEST_CALLS"
 SH
 cat >"$test_root/migrations/200-second.sh" <<'SH'
+# omarchy:platforms=arch,debian
 [[ $OMARCHY_PATH == "$TEST_EXPECTED_OMARCHY_PATH" ]]
 echo second >>"$TEST_CALLS"
 SH
@@ -58,6 +60,7 @@ failure_home="$test_tmp/failure-home"
 mkdir -p "$failure_root/migrations" "$failure_home"
 
 cat >"$failure_root/migrations/500-fail.sh" <<'SH'
+# omarchy:platforms=arch,debian
 echo before-fail >>"$TEST_CALLS"
 false
 echo after-fail >>"$TEST_CALLS"

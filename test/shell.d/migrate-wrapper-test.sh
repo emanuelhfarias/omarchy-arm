@@ -19,12 +19,14 @@ SH
 chmod +x "$stub_bin/omarchy-notification-dismiss"
 
 cat >"$test_root/migrations/100-migration.sh" <<'SH'
+# omarchy:platforms=arch,debian
 echo migration >>"$TEST_CALLS"
 SH
 
 run_migrate() {
   HOME="$test_home" \
   OMARCHY_PATH="$test_root" \
+  OMARCHY_PLATFORM=debian \
   PATH="$stub_bin:$ROOT/bin:$PATH" \
   TEST_CALLS="$test_tmp/calls" \
   TEST_DISMISSALS="$test_tmp/dismissals" \

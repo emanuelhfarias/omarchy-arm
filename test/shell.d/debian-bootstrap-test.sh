@@ -45,6 +45,15 @@ grep -q '^  gawk ' "$ROOT/bin/omarchy-menu-keybindings" ||
   fail "Keybindings parser explicitly uses GNU awk"
 pass "Debian installs the parser required by the keybindings menu"
 
+grep -qxF lua5.4 "$base_packages" ||
+  fail "Debian installs modern Lua for the current Hyprland helpers"
+if grep -qxF lua5.1 "$base_packages"; then
+  fail "Debian no longer selects Lua 5.1 as its default interpreter"
+fi
+grep -qxF libxkbcommon-tools "$base_packages" ||
+  fail "Debian installs xkbcli for keyboard-layout discovery"
+pass "Debian installs the current Hyprland and keyboard-layout runtimes"
+
 for docker_package in docker.io docker-cli docker-buildx docker-compose; do
   grep -qxF "$docker_package" "$base_packages" ||
     fail "Debian installs the complete Docker toolchain: $docker_package"

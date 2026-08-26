@@ -65,7 +65,8 @@ libnss-mdns
 libreoffice
 libsecret-tools
 libvips-tools
-lua5.1
+libxkbcommon-tools
+lua5.4
 luarocks
 man-db
 mpv
