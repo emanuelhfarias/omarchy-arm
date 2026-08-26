@@ -7,6 +7,8 @@ source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)/base-test.sh"
 base_packages="$ROOT/install/debian/omarchy-base.packages"
 bootstrap="$ROOT/bootstrap/debian"
 services="$ROOT/install/debian/config/enable-services.sh"
+debian_config="$ROOT/install/debian/config/all.sh"
+lua_config="$ROOT/install/debian/config/lua.sh"
 install_assets="$ROOT/install/debian/install-assets.sh"
 debian_monitors="$ROOT/install/debian/defaults/hypr/monitors.lua"
 sddm_config="$ROOT/etc/sddm.conf.d/10-wayland.conf"
@@ -52,6 +54,10 @@ if grep -qxF lua5.1 "$base_packages"; then
 fi
 grep -qxF libxkbcommon-tools "$base_packages" ||
   fail "Debian installs xkbcli for keyboard-layout discovery"
+grep -q 'debian/config/lua.sh' "$debian_config" ||
+  fail "Debian system setup reconciles the default Lua interpreter"
+grep -q 'update-alternatives --set lua-interpreter /usr/bin/lua5.4' "$lua_config" ||
+  fail "Debian selects Lua 5.4 for the unversioned lua command"
 pass "Debian installs the current Hyprland and keyboard-layout runtimes"
 
 for docker_package in docker.io docker-cli docker-buildx docker-compose; do
