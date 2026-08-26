@@ -21,7 +21,7 @@ prompt_reboot=1
 # the checkout's bin keeps root on the code being edited — the same trust the
 # link already extends to every system script Omarchy runs out of $OMARCHY_PATH.
 sudoers_file="/etc/sudoers.d/omarchy-dev-path"
-system_secure_path="/usr/local/sbin:/usr/local/bin:/usr/bin"
+system_secure_path="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 if (( $# < 1 || $# > 2 )) || [[ $1 == "-h" || $1 == "--help" ]]; then
   cat <<USAGE
@@ -91,13 +91,25 @@ done
 staged_sudoers=$(mktemp)
 trap 'rm -f "$staged_sudoers"' EXIT
 
+visudo_command=""
+for candidate in /usr/bin/visudo /usr/sbin/visudo; do
+  if [[ -x $candidate ]]; then
+    visudo_command=$candidate
+    break
+  fi
+done
+if [[ -z $visudo_command ]]; then
+  echo "Error: visudo is required to validate $sudoers_file." >&2
+  exit 1
+fi
+
 {
   printf 'Defaults secure_path='
   sudoers_quote "$target/bin:$system_secure_path"
   printf '\n'
 } >"$staged_sudoers"
 
-if ! visudo -cf "$staged_sudoers" >/dev/null; then
+if ! "$visudo_command" -cf "$staged_sudoers" >/dev/null; then
   echo "Error: refusing to install an invalid $sudoers_file for $target" >&2
   exit 1
 fi

@@ -11,7 +11,17 @@ stub_bin="$test_tmp/bin"
 log_file="$test_tmp/dev-link.log"
 conf_file="$test_tmp/omarchy.conf"
 sudoers_file="$test_tmp/omarchy-dev-path"
+test_visudo=$(command -v visudo 2>/dev/null || true)
+[[ -n $test_visudo ]] || test_visudo=/usr/sbin/visudo
 mkdir -p "$stub_bin" "$test_tmp/home"
+
+cat >"$stub_bin/realpath" <<'SH'
+#!/bin/bash
+
+[[ $1 == "-e" && -e $2 ]] || exit 1
+printf '%s\n' "$2"
+SH
+chmod +x "$stub_bin/realpath"
 
 cat >"$stub_bin/sudo" <<'SH'
 #!/bin/bash
@@ -80,15 +90,21 @@ pass "dev link points OMARCHY_PATH at the checkout"
 
 # sudo reads secure_path, not the caller's PATH, so the checkout has to come
 # first there too or `sudo omarchy-*` runs the packaged copy.
-[[ $(<"$sudoers_file") == "Defaults secure_path=\"$checkout/bin:/usr/local/sbin:/usr/local/bin:/usr/bin\"" ]] ||
+[[ $(<"$sudoers_file") == "Defaults secure_path=\"$checkout/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\"" ]] ||
   fail "dev link prepends the checkout to sudo's secure_path" "$(<"$sudoers_file")"
 pass "dev link prepends the checkout to sudo's secure_path"
+
+grep -Fq '/usr/bin/visudo /usr/sbin/visudo' "$ROOT/bin/omarchy-dev-link" ||
+  fail "dev link searches only trusted system locations for visudo"
+grep -Fq '/usr/sbin/visudo' "$ROOT/bin/omarchy-dev-link" ||
+  fail "dev link falls back to Debian's visudo location"
+pass "dev link finds visudo on Debian"
 
 grep -Eq $'^sudo\tinstall\t-Dm440\t-o\troot\t-g\troot\t[^\t]+\t/etc/sudoers\\.d/omarchy-dev-path$' "$log_file" ||
   fail "dev link installs the drop-in root-owned and read-only" "$(cat "$log_file")"
 pass "dev link installs the drop-in root-owned and read-only"
 
-visudo -cf "$sudoers_file" >/dev/null ||
+"$test_visudo" -cf "$sudoers_file" >/dev/null ||
   fail "dev link writes a sudoers drop-in sudo can parse" "$(<"$sudoers_file")"
 pass "dev link writes a sudoers drop-in sudo can parse"
 
@@ -108,7 +124,7 @@ quoted_checkout=$(make_checkout 'check "out"')
 : >"$sudoers_file"
 run_link "$quoted_checkout" --no-reboot >/dev/null
 
-visudo -cf "$sudoers_file" >/dev/null ||
+"$test_visudo" -cf "$sudoers_file" >/dev/null ||
   fail "dev link escapes a checkout path for sudoers" "$(<"$sudoers_file")"
 pass "dev link escapes a checkout path for sudoers"
 
