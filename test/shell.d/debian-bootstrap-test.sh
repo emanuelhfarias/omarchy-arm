@@ -51,7 +51,13 @@ grep -q 'user/mise.sh' "$debian_user_setup" ||
 if grep -q 'omarchy-cmd-missing mise' "$debian_user_setup"; then
   fail "Debian user setup treats mise as a required runtime"
 fi
-pass "Debian installs and configures mise from its signed repository"
+grep -q 'mise which node' "$bootstrap" ||
+  fail "Debian bootstrap checks for a mise-managed Node.js installation"
+grep -q 'omarchy-install-dev-env.*node' "$bootstrap" ||
+  fail "Debian bootstrap installs Node.js with the Omarchy mise workflow"
+grep -q 'mise-tool:node' "$bootstrap" ||
+  fail "Debian installation health checks require mise-managed Node.js"
+pass "Debian installs mise and its Node.js development runtime"
 
 packages_guard_end=$(awk '/^if ! phase_done packages; then$/ { in_guard=1; next } in_guard && /^fi$/ { print NR; exit }' "$bootstrap")
 first_package_install=$(grep -n 'apt_get install -y --no-install-recommends "${stable_packages\[@\]}"' "$bootstrap" | cut -d: -f1)

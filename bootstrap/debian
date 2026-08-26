@@ -271,9 +271,9 @@ if ! phase_done system-config; then
   mark_phase system-config
 fi
 
+target_home=$(getent passwd "$TARGET_USER" | cut -d: -f6)
 if ! phase_done user-config; then
   echo "==> Seed and configure $TARGET_USER"
-  target_home=$(getent passwd "$TARGET_USER" | cut -d: -f6)
   sudo -u "$TARGET_USER" cp -an /etc/skel/. "$target_home/"
   sudo -u "$TARGET_USER" env \
     HOME="$target_home" \
@@ -286,7 +286,17 @@ if ! phase_done user-config; then
   mark_phase user-config
 fi
 
-target_home=$(getent passwd "$TARGET_USER" | cut -d: -f6)
+if ! sudo -u "$TARGET_USER" env HOME="$target_home" USER="$TARGET_USER" mise which node >/dev/null 2>&1; then
+  echo "==> Install Node.js with mise"
+  sudo -u "$TARGET_USER" env \
+    HOME="$target_home" \
+    USER="$TARGET_USER" \
+    OMARCHY_PLATFORM=debian \
+    OMARCHY_PATH="$INSTALL_ROOT" \
+    PATH="$INSTALL_ROOT/bin:/usr/local/bin:/usr/bin:/bin:$target_home/.local/bin:$target_home/.local/share/mise/shims" \
+    "$INSTALL_ROOT/bin/omarchy-install-dev-env" node
+fi
+
 echo "==> Reconcile Debian user defaults"
 sudo -u "$TARGET_USER" env \
   HOME="$target_home" \
@@ -314,11 +324,11 @@ fi
 if ! phase_done health-check; then
   echo "==> Verify the Omarchy installation"
   missing=()
-  for required_command in Hyprland hyprctl qs uwsm; do
+  for required_command in Hyprland hyprctl mise qs uwsm; do
     command -v "$required_command" >/dev/null || missing+=("command:$required_command")
   done
 
-  target_home=$(getent passwd "$TARGET_USER" | cut -d: -f6)
+  sudo -u "$TARGET_USER" env HOME="$target_home" USER="$TARGET_USER" mise which node >/dev/null 2>&1 || missing+=("mise-tool:node")
   [[ -f /usr/local/share/wayland-sessions/omarchy.desktop ]] || missing+=("session:omarchy.desktop")
   sudo test -f "$target_home/.config/hypr/hyprland.lua" || missing+=("config:hyprland.lua")
   sudo systemctl is-enabled sddm.service >/dev/null 2>&1 || missing+=("service:sddm")
