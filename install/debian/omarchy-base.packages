@@ -84,6 +84,7 @@ plocate
 plymouth
 polkitd
 power-profiles-daemon
+python-is-python3
 python3-gi
 python3-nautilus
 qml6-module-qtquick-effects

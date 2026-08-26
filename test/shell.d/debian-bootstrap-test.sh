@@ -83,6 +83,8 @@ if grep -qxF lua5.1 "$base_packages"; then
 fi
 grep -qxF libxkbcommon-tools "$base_packages" ||
   fail "Debian installs xkbcli for keyboard-layout discovery"
+grep -qxF python-is-python3 "$base_packages" ||
+  fail "Debian provides the python command required by Omarchy tooling and tests"
 grep -q 'debian/config/lua.sh' "$debian_config" ||
   fail "Debian system setup reconciles the default Lua interpreter"
 grep -q 'update-alternatives --set lua-interpreter /usr/bin/lua5.4' "$lua_config" ||
